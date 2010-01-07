@@ -1,3 +1,13 @@
+#!/usr/bin/env python
+"""OSX-based script to watch for changes to network state and write out a second
+resolv.conf file containing the DHCP provided nameservers, intended for use with
+a local resolver such as dnsmasq. This is to workaround the changes in Snow Leopard
+from Leopard with regards to DNS resolution -- ie: the inability to have both manually
+configured nameservers and DHCP provided ones as well as the issues with split-DNS.
+
+usage: python automasq.py /path/to/second/resolv.conf
+
+"""
 import signal
 import sys
 
