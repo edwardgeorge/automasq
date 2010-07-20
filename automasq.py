@@ -15,11 +15,6 @@ from SystemConfiguration import *
 
 GLOBAL_KEY = 'State:/Network/Global/IPv4'
 
-def sigint(*args):
-    print "SIGINT: bailing out"
-    loop = CFRunLoopGetCurrent()
-    CFRunLoopStop(loop)
-
 class Watcher(object):
     def __init__(self, filename):
         self.filename = filename
@@ -62,9 +57,22 @@ class Watcher(object):
             servers = self.get_primary_dns(store)
             self.write_file(servers)
 
+
+def dummy_timer(*args):
+    pass
+
+
 def main(filename):
-    signal.signal(signal.SIGINT, sigint)
-    watcher = Watcher(filename)
+    # this gives us a callback into python every 1s for signal handling
+    CFRunLoopAddTimer(CFRunLoopGetCurrent(),
+        CFRunLoopTimerCreate(None, CFAbsoluteTimeGetCurrent(), 1.0, 0, 0, dummy_timer, None),
+        kCFRunLoopCommonModes)
+    try:
+        watcher = Watcher(filename)
+    except KeyboardInterrupt, e:
+        # exiting
+        pass
 
 if __name__ == '__main__':
     main(sys.argv[1])
+
