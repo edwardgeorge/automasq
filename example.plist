@@ -9,6 +9,8 @@
 	<key>ProgramArguments</key>
 	<array>
 		<string>/Users/edwardgeorge/bin/automasq.py</string>
+		<string>-d</string>
+		<string>/Users/edwardgeorge/etc/resolv.external.conf</string>
 		<string>/Users/edwardgeorge/etc/resolv.auto.conf</string>
 	</array>
 	<key>RunAtLoad</key>
