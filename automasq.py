@@ -8,7 +8,6 @@ configured nameservers and DHCP provided ones as well as the issues with split-D
 usage: python automasq.py /path/to/second/resolv.conf
 
 """
-import signal
 import sys
 
 from SystemConfiguration import *
