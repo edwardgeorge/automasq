@@ -8,6 +8,7 @@ configured nameservers and DHCP provided ones as well as the issues with split-D
 usage: python automasq.py /path/to/second/resolv.conf
 
 """
+import optparse
 import sys
 
 from SystemConfiguration import *
@@ -15,8 +16,9 @@ from SystemConfiguration import *
 GLOBAL_KEY = 'State:/Network/Global/IPv4'
 
 class Watcher(object):
-    def __init__(self, filename):
+    def __init__(self, filename, defaultfilename=None):
         self.filename = filename
+        self.defaults = defaultfilename
 
         store = self.store = SCDynamicStoreCreate(None, "automasq", self.dynamicStoreChanged, None)
         SCDynamicStoreSetNotificationKeys(store, None, [GLOBAL_KEY])
@@ -30,6 +32,9 @@ class Watcher(object):
 
     def write_file(self, servers=[]):
         with open(self.filename, 'w+') as f:
+            if not servers and self.defaults is not None:
+                with open(self.defaults) as d:
+                    f.write(d.read())
             for server in servers:
                 f.write('nameserver %s\n' % server)
 
@@ -61,17 +66,24 @@ def dummy_timer(*args):
     pass
 
 
-def main(filename):
+def main(filename, options):
     # this gives us a callback into python every 1s for signal handling
     CFRunLoopAddTimer(CFRunLoopGetCurrent(),
         CFRunLoopTimerCreate(None, CFAbsoluteTimeGetCurrent(), 1.0, 0, 0, dummy_timer, None),
         kCFRunLoopCommonModes)
     try:
-        watcher = Watcher(filename)
+        watcher = Watcher(filename, defaultfilename=options.default)
     except KeyboardInterrupt, e:
         # exiting
         pass
 
 if __name__ == '__main__':
-    main(sys.argv[1])
+    usage = "usage: %prog [options] output-file"
+    parser = optparse.OptionParser(usage)
+    parser.add_option('-d', '--default-conf', dest='default',
+        help='default conf if no resolvers provided', metavar='RESOLVCONF') 
+    opts, args = parser.parse_args()
+    if len(args) != 1:
+        parser.error("specify a single output-file")
+    main(args[0], opts)
 
