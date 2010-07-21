@@ -19,9 +19,11 @@ GLOBAL_KEY = 'State:/Network/Global/IPv4'
 
 
 class Watcher(object):
-    def __init__(self, filename, defaultfilename=None):
+    def __init__(self, filename, defaults_filename=None,
+                append_defaults=False):
         self.filename = filename
-        self.defaults = defaultfilename
+        self.defaults = defaults_filename
+        self.append = append_defaults
 
         store = self.store = SCDynamicStoreCreate(None, "automasq",
             self.dynamicStoreChanged, None)
@@ -37,11 +39,11 @@ class Watcher(object):
 
     def write_file(self, servers=[]):
         with open(self.filename, 'w+') as f:
-            if not servers and self.defaults is not None:
-                with open(self.defaults) as d:
-                    f.write(d.read())
             for server in servers:
                 f.write('nameserver %s\n' % server)
+            if (self.append or not servers) and self.defaults is not None:
+                with open(self.defaults) as d:
+                    f.write(d.read())
 
     def process_dns_for_service(self, store, service):
         key = 'State:/Network/Service/%s/DNS' % service
@@ -78,7 +80,8 @@ def main(filename, options):
             dummy_timer, None),
         kCFRunLoopCommonModes)
     try:
-        watcher = Watcher(filename, defaultfilename=options.default)
+        watcher = Watcher(filename, defaults_filename=options.default,
+            append_defaults=options.append_defaults)
     except KeyboardInterrupt, e:
         # exiting
         pass
@@ -88,7 +91,12 @@ if __name__ == '__main__':
     parser = optparse.OptionParser(usage)
     parser.add_option('-d', '--default-conf', dest='default',
         help='default conf if no resolvers provided', metavar='RESOLVCONF')
+    parser.add_option('-a', '--append', dest='append_defaults',
+        action='store_true',
+        help='always append defaults to generated resolv.conf')
     opts, args = parser.parse_args()
     if len(args) != 1:
         parser.error("specify a single output-file")
+    if opts.append_defaults and not opts.default:
+        parser.error("default conf must be specified to be able to append")
     main(args[0], opts)
